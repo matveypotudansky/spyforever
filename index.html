@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Шпион — Мобильное издание</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex-grow: 1;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: -0.05em;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #a78bfa, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            text-align: center;
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .card-selector, .mode-selector {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .counter-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .counter-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .counter-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .counter-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .grid-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .opt-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #d1d5db;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .opt-btn .desc {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .opt-btn.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: #6366f1;
+            color: #fff;
+        }
+
+        .opt-btn.active .desc {
+            color: #a5b4fc;
+        }
+
+        .primary-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: auto;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .primary-btn:active {
+            transform: scale(0.98);
+            background: #4338ca;
+        }
+
+        /* Кнопка настроек */
+        .top-action-bar {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 10;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #141416;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 24px;
+            position: relative;
+        }
+
+        /* Экраны игрового процесса */
+        .center-box {
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .pass-title {
+            font-size: 1.3rem;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .player-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .role-card {
+            background: linear-gradient(145deg, #141416, #0f0f11);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 100%;
+            padding: 48px 24px;
+            border-radius: 24px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .role-text {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .spy-alert {
+            color: #ef4444;
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .word-reveal {
+            color: #34d399;
+            text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+        }
+
+        /* Экран финала */
+        .timer-display {
+            font-size: 4.5rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin: 24px 0;
+            letter-spacing: -0.02em;
+            color: white;
+        }
+
+        .timer-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 40px;
+        }
+
+        .danger-notice {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 16px;
+            border-radius: 14px;
+            color: #fca5a5;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- КНОПКА НАСТРОЕК (ШЕСТЕРЕНКА) -->
+        <div class="top-action-bar" id="actionBar">
+            <button class="icon-btn" onclick="toggleSettings(true)" id="gearBtn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </div>
+
+        <!-- МОДАЛКА НАСТРОЕК ШПИОНОВ -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="section-title">Количество шпионов</div>
+                <div class="card-selector counter-control">
+                    <button class="counter-btn" onclick="adjustSpy(-1)">-</button>
+                    <div class="counter-value" id="spyCountLabel">1</div>
+                    <button class="counter-btn" onclick="adjustSpy(1)">+</button>
+                </div>
+                <div class="subtitle" style="margin-bottom: 20px; text-align: left;">Можно выбрать от 1 до 3 шпионов. Количество должно быть меньше числа игроков хотя бы на 2.</div>
+                <button class="primary-btn" onclick="toggleSettings(false)">Сохранить</button>
+            </div>
+        </div>
+
+        <!-- ЭКРАН НАСТРОЙКИ МАТЧА -->
+        <div class="screen active" id="scr-setup">
+            <h1>ШПИОН</h1>
+            <div class="subtitle">Мобильная версия Pass & Play</div>
+
+            <div class="section-title">Количество игроков</div>
+            <div class="card-selector counter-control">
+                <button class="counter-btn" onclick="adjustPlayers(-1)">-</button>
+                <div class="counter-value" id="playerCountLabel">3</div>
+                <button class="counter-btn" onclick="adjustPlayers(1)">+</button>
+            </div>
+
+            <div class="section-title">Режим игры</div>
+            <div class="mode-selector grid-options">
+                <button class="opt-btn active" id="mode-classic" onclick="setMode('classic')">
+                    <span>Классический</span>
+                    <span class="desc">Шпионы знают, что они шпионы, и видят надпись "ВЫ ШПИОН".</span>
+                </button>
+                <button class="opt-btn" id="mode-blind" onclick="setMode('blind')">
+                    <span>Слепой Шпион</span>
+                    <span class="desc">Шпион не знает своего статуса. Ему даётся другое похожее слово.</span>
+                </button>
+            </div>
+
+            <div class="section-title">Категория слов</div>
+            <div class="grid-options" id="categories-list">
+                <!-- Генерируется из JS -->
+            </div>
+
+            <button class="primary-btn" onclick="initGame()" style="margin-top: 32px;">Начать раунд</button>
+        </div>
+
+        <!-- ЭКРАН ОЖИДАНИЯ (ПЕРЕДАЧА СМАРТФОНА) -->
+        <div class="screen" id="scr-transition">
+            <div class="center-box">
+                <div class="pass-title">Передайте телефон игроку</div>
+                <div class="player-name" id="trans-player-name">Игрок 1</div>
+                <button class="primary-btn" onclick="revealRole()">Показать роль</button>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ОТОБРАЖЕНИЯ РОЛИ -->
+        <div class="screen" id="scr-role">
+            <div class="center-box">
+                <div class="pass-title" id="role-player-header">Карточка игрока 1</div>
+                <div class="role-card">
+                    <div class="role-text" id="role-content">...</div>
+                </div>
+                <button class="primary-btn" onclick="confirmRole()">Понял, скрыть роль</button>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ОБСУЖДЕНИЯ (ФИНАЛ) -->
+        <div class="screen" id="scr-final">
+            <div class="center-box">
+                <div class="player-name" style="margin-bottom: 8px;">Время вычислять!</div>
+                <div class="subtitle" id="final-mode-desc">Шпион(ы) среди вас. Начните дискуссию.</div>
+                
+                <div class="timer-display" id="timer">05:00</div>
+                <button class="timer-btn" id="timer-toggle" onclick="toggleTimer()">Пауза</button>
+
+                <div class="danger-notice">Задавайте друг другу вопросы. Шпионы должны маскироваться, остальные — вычислить их!</div>
+                <button class="primary-btn" onclick="resetToSetup()">Переиграть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ДАННЫЕ ИЗ ТЗ С ИСПРАВЛЕНИЯМИ И ПРОПУСКАМИ (ПЕРЕНЕСЕНЫ ОДИН В ОДИН)
+        const rawData = {
+            footballers: [
+                "1. Лионель Месси; 26. Эусебио; 51. Оливер Кан; 76. Самуэль Это’О",
+                "2. Криштиану Роналду; 27. Гарринча; 52. Лотар Маттеус; 77. Яя Туре",
+                "3. Пеле; 28. Бобби Чарльтон; 53. Герд Мюллер; 78. Майкл Оуэн",
+                "4. Диего Марадона; 29. Джордж Бест; 54. Юрген Клинсманн; 79. Алан Ширер",
+                "5. Йохан Кройф; 30. Марко ван Бастен; 55. Кевин Де Брюйне; 80. Р. ван Нистелрой",
+                "6. Зинедин Zidane; 31. Рууд Гуллит; 56. Мохаммед Салах; 81. Робин ван Перси",
+                "7. Роналдо (Зубастик); 32. Франк Райкард; 57. Садио Мане; 82. Арьен Роббен",
+                "8. Франц Беккенбауэр; 33. Ромарио; 58. Харри Kane; 83. Уэсли Снейдер",
+                "9. Альфредо Ди Стефано; 34. Ривалдо; 59. Эрлинг Холанд; 84. Звонимир Бобан",
+                "10. Мишель Платини; 35. Кака; 60. Луис Суарес; 85. Давор Шукер",
+                "11. Роналдиньо; 36. Луиш Фигу; 61. Эдинсон Кавани; 86. Лукас Подольски",
+                "12. Тьерри Анри; 37. Дэвид Бекхэм; 62. Диего Форлан; 87. Мирослав Клозе",
+                "13. Андрес Иньеста; 38. Рауль Гонсалес; 63. Гарет Бейл; 88. Г. Батистута",
+                "14. Хави Эрнандес; 39. Икер Касильяс; 64. Райан Гиггз; 89. Хавьер Дзанетти",
+                "15. Лука Модрич; 40. Серхио Рамос; 65. Пол Скоулз; 90. Эрнан Креспо",
+                "16. Карим Бензема; 41. Хаби Алонсо; 66. Рой Кин; 91. Серхио Агуэро",
+                "17. Килиан Мбаппе; 42. Жерар Пике; 67. Уэйн Руни; 92. Анхель Ди Мария",
+                "18. Неймар; 43. Карлес Пуйоль; 68. Стивен Джеррард; 93. Артуро Видаль",
+                "19.保留 Ливандовский; 44.masked Фабио Каннаваро; 69. Фрэнк Лэмпард; 94. Алексис Санчес",
+                "20. Златан Ибрагимович; 45. А. Дель Пьеро; 70. Джон Терри; 95. Хамес Родригес",
+                "21. Паоло Мальдини; 46. Франческо Tотти; 71. Рио Фердинанд; 96. Радамель Фалькао",
+                "22. Роберто Карлос; 47. Андреа Пирло; 72. Патрик Виейра; 97. Кейлор Навас",
+                "23. Джанлуиджи Буффон; 48. Филипп Лам; 73. Деннис Бергкамп; 98. Сон Хын Мин",
+                "24. Лев Яшин; 49. Томас Мюллер; 74. Дидье Дрогба; 99. Хидетоши Наката",
+                "25. Мануэль Нойер; 50. Б. Швайнштайгер; 75. Давид Вилья; 100. Андрей Шевченко"
+            ],
+            games: [
+                "1. Minecraft; 26. Zelda: Breath of the Wild; 51. Among Us; 76. NFS: Most Wanted",
+                "2. Tetris; 27. CoD: Black Ops; 52. Roblox; 77. Heroes of M&M III",
+                "3. Grand Theft Auto V; 28. CoD: Modern Warfare 2; 53. Fortnite; 78. S.T.A.L.K.E.R.: SoC",
+                "4. Red Dead Redemption 2; 29. GTA: San Andreas; 54. Apex Legends; 79. Metro 2033",
+                "5. Wii Sports; 30. GTA: Vice City; 55. Overwatch; 80. Max Payne",
+                "6. Mario Kart 8 Deluxe; 31. Fallout 3; 56. Valorant; 81. Mafia: The City of LH",
+                "7. PUBG: Battlegrounds; 32. Fallout: New Vegas; 57. Team Fortress 2; 82. C&C: Red Alert 2",
+                "8. Terraria; 33. Mass Effect 2; 58. Left 4 Dead 2; 83. Deus Ex",
+                "9. The Witcher 3: Wild Hunt; 34. BioShock; 59. Dead by Daylight; 84. System Shock 2",
+                "10. Super Mario Bros.; 35. Halo: Combat Evolved; 60. Rocket League; 85. Life is Strange",
+                "11. Counter-Strike 2 / GO; 36. StarCraft; 61. Rust; 86. Detroit: Become Human",
+                "12. Dota 2; 37. Warcraft III; 62. ARK: Survival Evolved; 87. Heavy Rain",
+                "13. League of Legends; 38. Age of Empires II; 63. Subnautica; 88. Disco Elysium",
+                "14. World of Warcraft; 39. The Sims 2; 64. Sea of Thieves; 89. Outer Wilds",
+                "15. TES V: Skyrim; 40. Civilization V; 65. Horizon Zero Dawn; 90. Hades",
+                "16. Elden Ring; 41. Assassin's Creed II; 66. Uncharted 4: A Thief's End; 91. Celeste",
+                "17. Cyberpunk 2077; 42. Borderlands 2; 67. Marvel's Spider-Man; 92. Cuphead",
+                "18. Diablo II; 43. Stardew Valley; 68. Baldur's Gate 3; 93. Garry's Mod",
+                "19. Half-Life 2; 44. Human: Fall Flat; 69. Monster Hunter: World; 94. Payday 2",
+                "20. Doom (1993); 45. Animal Crossing: NH; 70. Street Fighter II; 95. SimCity 4",
+                "21. Pac-Man; 46. Undertale; 71. Mortal Kombat 3; 96. Total War: Shogun 2",
+                "22. Resident Evil 4; 47. Hollow Knight; 72. Tekken 3; 97. Crusader Kings III",
+                "23. Portal 2; 48. Dark Souls; 73. Resident Evil 2; 98. Hearts of Iron IV",
+                "24. God of War (2018); 49. Bloodborne; 74. Final Fantasy VII; 99. Football Manager",
+                "25. The Last of Us; 50. Super Smash Bros. Ult.; 75. Silent Hill 2; 100. Spore"
+            ],
+            clubs: [
+                "1. Реал Мадрид; 26. Фенербахче; 51. Шахтер Донецк",
+                "2. Барселона; 27. Бешикташ; 52. Зенит",
+                "3. Манчестер Юнайтед; 28. Рома; 53. Спартак Москва",
+                "4. Ливерпуль; 29. Лацио; 54. ЦСКА Москва",
+                "5. Бавария Мюнхен; 30. Наполи; 55. Локомотив Москва",
+                "6. Ювентус; 31. Фиорентина; 56. Палмейрас",
+                "7. Манчестер Сити; 32. Олимпик Марсель; 57. Сантос",
+                "8. Челси; 33. Лион",
+                "9. ПСЖ; 34. Монако",
+                "10. Арсенал; 35. Валенсия",
+                "11. Милан; 36. Севилья",
+                "12. Интер Милан; 37. Вильярреал",
+                "13. Атлетико Мадрид; 38. Ньюкасл Юнайтед",
+                "14. Боруссия Дортмунд; 39. Вест Хэм Юнайтед",
+                "15. Тоттенхэм Хотспур; 40. Астон Вилла",
+                "16. Аякс; 41. Эвертон",
+                "17. Бенфика; 42. Лестер Сити",
+                "18. Порту; 43. РБ Лейпциг",
+                "19. Фламенго; 44. Байер Леверкузен",
+                "20. Коринтианс; 45. Айнтрахт Франкфурт",
+                "21. Бока Хуниорс; 46. Шальке 04",
+                "22. Ривер Плейт; 47. Спортинг Лиссабон",
+                "23. Селтик; 48. Олимпиакос",
+                "24. Рейнджерс; 49. Панатинаикос",
+                "25. Галатасарай; 50. Динамо Киев"
+            ],
+            brands: [
+                "1. Apple; 26. Meta (Facebook); 76. Cartier",
+                "2. Coca-Cola; 27. [ПРОПУСК]; 77. Hermès",
+                "3. Google; 28. Ferrari; 78. Prada",
+                "4. Microsoft; 29. Porsche; 54. [ПРОПУСК]; 79. Tiffany & Co.",
+                "5. Amazon; 30. Rolex; 80. Heineken",
+                "6. McDonald's; 31. Nestle; 56. Canon",
+                "7. Toyota; 32. Honda; 57. Xerox",
+                "8. Mercedes-Benz; 33. IKEA; 58. HP",
+                "9. Disney; 34. LEGO",
+                "10. Nike; 35. Starbucks; 85. H&M",
+                "11. Ford; 36. Netflix; 61. DHL; 86. Zara",
+                "12. IBM; 37. Walmart; 62. [ПРОПУСК]; 87. Gillette",
+                "13. Samsung; 38. [ПРОПУСК]; 63. Red Bull; 88. Colgate",
+                "14. General Electric; 64. YouTube; 89. Nescafé",
+                "15. Louis Vuitton; 40. Johnson & Johnson; 65. TikTok; 90. eBay",
+                "16. [ПРОПУСК]; 41. L'Oreal; 66. Instagram; 91. PlayStation",
+                "17. Sony; 42. Mastercard; 67. Alibaba; 92. Uber",
+                "18. BMW; 43. [ПРОПУСК]; 68. [ПРОПУСК]; 93. [ПРОПУСК]",
+                "19. Visa; 44. [ПРОПУСК]; 69. Xiaomi; 94. Tesla",
+                "20. Intel; 70. Hyundai; 95. SpaceX",
+                "21. Volkswagen; 71. Audi; 96. Nvidia",
+                "22. Chanel; 72. Volvo; 97. [ПРОПУСК]",
+                "23. Adidas; 48. Philips; 73. [ПРОПУСК]; 98. K",
+                "24. Gucci; 49. Panasonic; 74. Bayer; 99. Rolls-Royce",
+                "25. Pepsi; 50. Nintendo"
+            ],
+            movies: [
+                "1. Аватар; 51. Сияние; 76. Дюна (Д. Вильнёва)",
+                "2. Мстители: Финал",
+                "3. Титаник",
+                "4. Звёздные войны: Эп. IV; 79. Старикам тут не место",
+                "5. Крёстный отец; 30. Король Лев (1994)",
+                "6. Матрица; 31. Челюсти",
+                "7. [ПРОПУСК]; 32. Чужой",
+                "58. Храброе сердце",
+                "34. Бегущий по лезвию",
+                "10. Бойцовский клуб; 35. Звёздные войны: Эп. V; 60. Семь",
+                "11. Форрест Гамп; 36. Мстители: Война беск.",
+                "12. [ПРОПУСК]; 37. Ч-Паук: Нет пути домой",
+                "13. Парк Юрского периода; 38. Мир Юрского периода",
+                "14. Назад в будущее; 64. Шоу Трумана",
+                "15. Терминатор 2; 40. ...Барби; 90. Брат",
+                "41. Гарри Поттер и ДС: Ч.2; 66. Волк с Уолл-стрит",
+                "42. Холодное сердце",
+                "18. Зелёная миля; 43. Суперсемейка 2",
+                "19. Гладиатор; 44. Миньоны; 69. Престиж",
+                "20. Интерстеллар; 45. Железный человек 3; 95. Пираты Карибского моря",
+                "21. Начало; 46. Трансформеры 3",
+                "47. Скала",
+                "48. Крепкий орешек; 73. Джокер (2019); 98. Звёздные войны: Эп. VI",
+                "49. Индиана Джонс: В поисках; 99. 007 Агент",
+                "50. Чужие; 75. Оппенгеймер; 100. Кинг Конг (1933)"
+            ]
+        };
+
+        const categoryNames = {
+            footballers: "⚽ Футболисты Топ-100",
+            games: "🎮 Компьютерные игры",
+            clubs: "🏆 Футбольные клубы",
+            brands: "💎 Глобальные бренды",
+            movies: "🎬 Популярные фильмы"
+        };
+
+        // Состояние игры
+        let playersCount = 3;
+        let spyCount = 1;
+        let gameMode = 'classic'; // 'classic' или 'blind'
+        let selectedCategory = 'footballers';
+        
+        let parsedCategories = {};
+        let playerRoles = []; 
+        let currentPlayerIndex = 0;
+        
+        // Переменные таймера
+        let timerDuration = 300; 
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        // Инициализация при загрузке
+        window.onload = () => {
+            parseAllData();
+            renderCategoryButtons();
+            updateUI();
+        };
+
+        // Очистка сырых данных из ТЗ на лету
+        function parseAllData() {
+            for (let key in rawData) {
+                let cleanWords = [];
+                rawData[key].forEach(row => {
+                    let items = row.split(';');
+                    items.forEach(item => {
+                        // Очищаем номера (например, 1., 26.), "masked", "...", пробелы
+                        let word = item.replace(/\d+\./g, '')
+                                     .replace(/masked/gi, '')
+                                     .replace(/\[ПРОПУСК\]/g, '')
+                                     .replace(/\.\.\./g, '')
+                                     .trim();
+                        if (word && word.length > 1) {
+                            cleanWords.push(word);
+                        }
+                    });
+                });
+                parsedCategories[key] = [...new Set(cleanWords)]; // Убираем дубликаты
+            }
+        }
+
+        function renderCategoryButtons() {
+            const container = document.getElementById('categories-list');
+            container.innerHTML = '';
+            for (let key in categoryNames) {
+                const btn = document.createElement('button');
+                btn.className = `opt-btn ${key === selectedCategory ? 'active' : ''}`;
+                btn.id = `cat-${key}`;
+                btn.onclick = () => selectCategory(key);
+                btn.innerText = categoryNames[key];
+                container.appendChild(btn);
+            }
+        }
+
+        function selectCategory(key) {
+            document.getElementById(`cat-${selectedCategory}`).classList.remove('active');
+            selectedCategory = key;
+            document.getElementById(`cat-${selectedCategory}`).classList.add('active');
+        }
+
+        function setMode(mode) {
+            document.getElementById('mode-classic').classList.remove('active');
+            document.getElementById('mode-blind').classList.remove('active');
+            gameMode = mode;
+            document.getElementById(`mode-${mode}`).classList.add('active');
+        }
+
+        function adjustPlayers(val) {
+            let next = playersCount + val;
+            if (next >= 3 && next <= 12) {
+                playersCount = next;
+                // Авто-корректировка шпионов при уменьшении пула игроков
+                if (spyCount >= playersCount - 1) {
+                    spyCount = Math.max(1, playersCount - 2);
+                }
+                updateUI();
+            }
+        }
+
+        function adjustSpy(val) {
+            let next = spyCount + val;
+            if (next >= 1 && next <= 3) {
+                if (next < playersCount - 1) {
+                    spyCount = next;
+                    updateUI();
+                } else {
+                    alert(`Для ${playersCount} игроков нельзя выбрать столько шпионов.`);
+                }
+            }
+        }
+
+        function toggleSettings(show) {
+            document.getElementById('settingsModal').style.display = show ? 'flex' : 'none';
+        }
+
+        function updateUI() {
+            document.getElementById('playerCountLabel').innerText = playersCount;
+            document.getElementById('spyCountLabel').innerText = spyCount;
+        }
+
+        // Логика запуска раунда и генерации ролей
+        function initGame() {
+            const currentPool = parsedCategories[selectedCategory];
+            if (!currentPool || currentPool.length < 2) {
+                alert("Ошибка загрузки слов из этой категории!");
+                return;
+            }
+
+            // Выбор Секретного Слова А
+            const randIdxA = Math.floor(Math.random() * currentPool.length);
+            const wordA = currentPool[randIdxA];
+
+            // Выбор Секретного Слова Б (для режима "Слепой шпион")
+            let wordB = wordA;
+            if (gameMode === 'blind') {
+                let randIdxB = Math.floor(Math.random() * currentPool.length);
+                while (randIdxB === randIdxA) {
+                    randIdxB = Math.floor(Math.random() * currentPool.length);
+                }
+                wordB = currentPool[randIdxB];
+            }
+
+            // Массив индексов игроков для распределения ролей шпионов
+            let indices = [];
+            for (let i = 0; i < playersCount; i++) indices.push(i);
+
+            // Случайный выбор индексов для шпионов
+            let spyIndices = [];
+            while (spyIndices.length < spyCount) {
+                let randomPos = Math.floor(Math.random() * indices.length);
+                spyIndices.push(indices.splice(randomPos, 1)[0]);
+            }
+
+            // Заполнение ролей для каждого игрока
+            playerRoles = [];
+            for (let i = 0; i < playersCount; i++) {
+                if (spyIndices.includes(i)) {
+                    playerRoles.push({
+                        isSpy: true,
+                        display: gameMode === 'classic' ? 'ВЫ ШПИОН' : wordB
+                    });
+                } else {
+                    playerRoles.push({
+                        isSpy: false,
+                        display: wordA
+                    });
+                }
+            }
+
+            currentPlayerIndex = 0;
+            document.getElementById('actionBar').style.display = 'none'; // Скрываем шестеренку в процессе
+            switchScreen('scr-transition');
+            updateTransitionScreen();
+        }
+
+        function updateTransitionScreen() {
+            document.getElementById('trans-player-name').innerText = `Игрок ${currentPlayerIndex + 1}`;
+        }
+
+        function revealRole() {
+            switchScreen('scr-role');
+            document.getElementById('role-player-header').innerText = `Игрок ${currentPlayerIndex + 1}, ваша роль:`;
+            
+            const card = document.getElementById('role-content');
+            const data = playerRoles[currentPlayerIndex];
+
+            card.className = "role-text";
+            if (data.display === 'ВЫ ШПИОН') {
+                card.classList.add('spy-alert');
+            } else {
+                card.classList.add('word-reveal');
+            }
+            card.innerText = data.display;
+        }
+
+        function confirmRole() {
+            currentPlayerIndex++;
+            if (currentPlayerIndex < playersCount) {
+                switchScreen('scr-transition');
+                updateTransitionScreen();
+            } else {
+                startFinalDiscussion();
+            }
+        }
+
+        function startFinalDiscussion() {
+            switchScreen('scr-final');
+            document.getElementById('final-mode-desc').innerText = 
+                gameMode === 'classic' 
+                ? `В раунде участвует шпионов: ${spyCount}. Начните обсуждение!`
+                : `Режим: Слепой Шпион. Шпионов: ${spyCount}. Они не знают, что получили другое слово!`;
+            
+            timerDuration = 300; 
+            isTimerRunning = false;
+            updateTimerDisplay();
+            toggleTimer(); // Автозапуск таймера
+        }
+
+        // Таймер дискуссии
+        function updateTimerDisplay() {
+            let mins = Math.floor(timerDuration / 60);
+            let secs = timerDuration % 60;
+            document.getElementById('timer').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timer-toggle');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                btn.innerText = "Старт";
+                isTimerRunning = false;
+            } else {
+                isTimerRunning = true;
+                btn.innerText = "Пауза";
+                timerInterval = setInterval(() => {
+                    if (timerDuration > 0) {
+                        timerDuration--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        alert("Время вышло! Пора голосовать за шпиона.");
+                        btn.innerText = "Время вышло";
+                        isTimerRunning = false;
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetToSetup() {
+            clearInterval(timerInterval);
+            document.getElementById('actionBar').style.display = 'block'; 
+            switchScreen('scr-setup');
+            updateUI();
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
