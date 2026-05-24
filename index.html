@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Шпион</title>
+    
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#09090b">
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2309090b%22/><circle cx=%2250%22 cy=%2250%22 r=%2225%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%226%22/><circle cx=%2250%22 cy=%2250%22 r=%226%22 fill=%22%23e11d48%22/></svg>">
+    
+    <style>
+        :root {
+            --bg-color: #09090b; 
+            --surface-color: #18181b;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --accent-color: #7c3aed; 
+            --accent-hover: #6d28d9;
+            --danger-color: #e11d48; 
+            --border-radius: 16px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            text-align: center;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .gear-btn {
+            position: absolute;
+            right: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .gear-btn:active {
+            background: #27272a;
+            color: var(--text-main);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .players-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            width: 100%;
+            margin-bottom: 1.2rem;
+            border: 1px solid #27272a;
+            transition: opacity 0.2s ease;
+        }
+
+        .players-control span {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:active {
+            background: #27272a;
+        }
+
+        .disabled-control {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .mode-switch {
+            display: flex;
+            background-color: var(--surface-color);
+            border: 1px solid #27272a;
+            border-radius: var(--border-radius);
+            padding: 4px;
+            width: 100%;
+            margin-bottom: 1.2rem;
+            gap: 4px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 8px;
+            border-radius: calc(var(--border-radius) - 4px);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .mode-btn.selected {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .categories-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: auto;
+            overflow-y: auto;
+            padding-bottom: 10px;
+            max-height: 200px;
+        }
+
+        .category-item-wrapper {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .category-btn {
+            flex: 1;
+            background-color: var(--surface-color);
+            color: var(--text-main);
+            border: 1px solid #27272a;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .category-btn.selected {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.2);
+        }
+
+        .category-delete-btn {
+            background-color: #27272a;
+            color: var(--danger-color);
+            border: 1px solid #3f3f46;
+            border-radius: var(--border-radius);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: background 0.2s;
+        }
+
+        .category-delete-btn:active {
+            background-color: #3f3f46;
+        }
+
+        .btn-add-category {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 1px dashed var(--accent-color);
+            padding: 14px;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        .btn-add-category:active {
+            background-color: rgba(124, 58, 237, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            margin-top: auto;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+            background-color: var(--accent-hover);
+        }
+
+        .role-card {
+            background-color: var(--surface-color);
+            border: 1px solid #27272a;
+            border-radius: 24px;
+            padding: 40px 20px;
+            width: 100%;
+            margin-bottom: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+        }
+
+        .role-title {
+            font-size: 1rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .role-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        .role-value.spy {
+            color: var(--danger-color);
+            font-size: 2.5rem;
+        }
+
+        .timer-display {
+            font-size: 4.5rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            margin: 1.5rem 0;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            margin-bottom: auto;
+        }
+
+        .btn-secondary {
+            background-color: var(--surface-color);
+            color: var(--text-main);
+            border: 1px solid #27272a;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            flex: 1;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:active {
+            background-color: #27272a;
+            transform: scale(0.97);
+        }
+
+        .player-indicator {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 24px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            border: 1px solid #27272a;
+            border-radius: 24px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: fadeIn 0.3s ease forwards;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #09090b;
+            border: 1px solid #27272a;
+            border-radius: var(--border-radius);
+            padding: 14px 20px;
+            width: 100%;
+            margin-top: 12px;
+            text-align: left;
+            transition: opacity 0.2s ease;
+        }
+
+        .toggle-label-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .toggle-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .toggle-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #27272a;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px; width: 20px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .modal-input, .modal-textarea {
+            width: 100%;
+            background-color: #09090b;
+            border: 1px solid #27272a;
+            color: var(--text-main);
+            border-radius: var(--border-radius);
+            padding: 14px;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            font-family: var(--font-family);
+            outline: none;
+            text-align: left;
+        }
+        
+        .modal-textarea {
+            height: 120px;
+            resize: none;
+        }
+
+        .modal-input:focus, .modal-textarea:focus {
+            border-color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- ЭКРАН 1: НАСТРОЙКИ -->
+    <div id="screen-setup" class="screen active">
+        <div class="header-container">
+            <h1>Шпион</h1>
+            <button class="gear-btn" id="btn-settings" aria-label="Настройки">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </div>
+        
+        <p style="margin-bottom: 8px;">Количество игроков</p>
+        <div class="players-control">
+            <button class="icon-btn" id="btn-minus">−</button>
+            <span id="players-count-display">4</span>
+            <button class="icon-btn" id="btn-plus">+</button>
+        </div>
+
+        <p style="margin-bottom: 8px;">Режим игры</p>
+        <div class="mode-switch">
+            <button class="mode-btn selected" id="mode-classic">Классический</button>
+            <button class="mode-btn" id="mode-blind">Слепой шпион</button>
+            <button class="mode-btn" id="mode-random">Случайный</button>
+        </div>
+
+        <p style="margin-bottom: 8px;">Выберите категорию</p>
+        <button class="btn-add-category" id="btn-open-add-pack">+ Своя категория</button>
+        <div class="categories-list" id="categories-container"></div>
+
+        <button class="btn-primary" id="btn-start">Начать игру</button>
+    </div>
+
+    <!-- ЭКРАН 2: ОЖИДАНИЕ ИГРОКА -->
+    <div id="screen-waiting" class="screen">
+        <div class="role-card" style="border: none; background: transparent;">
+            <div class="player-indicator" id="waiting-player-num">Игрок 1</div>
+            <p>Возьмите устройство в руки и убедитесь, что никто не подглядывает в экран.</p>
+        </div>
+        <button class="btn-primary" id="btn-show-role">Показать роль</button>
+    </div>
+
+    <!-- ЭКРАН 3: ПРОСМОТР РОЛИ -->
+    <div id="screen-role" class="screen">
+        <div class="role-card">
+            <div class="role-title" id="role-subtitle">Секретное слово</div>
+            <div class="role-value" id="role-word">...</div>
+        </div>
+        <p id="role-hint">Запомните это и никому не показывайте.</p>
+        <button class="btn-primary" id="btn-hide-role">Понял, скрыть</button>
+    </div>
+
+    <!-- ЭКРАН 4: ФИНАЛ (ТАЙМЕР) -->
+    <div id="screen-final" class="screen">
+        <h2>Шпион среди вас!</h2>
+        <p id="final-mode-status" style="font-size: 1.1rem; color: var(--accent-color); font-weight: 600; margin-top: 4px; margin-bottom: 4px; display: none;"></p>
+        <p id="final-spies-status" style="font-size: 1.1rem; color: var(--accent-color); font-weight: 600; margin-top: 4px; margin-bottom: 8px; display: none;"></p>
+        <p id="final-hint">Начните обсуждение и задавайте друг другу вопросы.</p>
+        
+        <div class="timer-display" id="timer-display">05:00</div>
+        
+        <div class="timer-controls">
+            <button class="btn-secondary" id="btn-pause-timer">Пауза</button>
+            <button class="btn-secondary" id="btn-reset-timer">+1 Мин</button>
+        </div>
+
+        <button class="btn-primary" id="btn-restart" style="margin-top: 24px;">Завершить и переиграть</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК -->
+<div class="modal-overlay" id="modal-settings">
+    <div class="modal-content">
+        <h2 style="margin-bottom: 1.5rem;">Дополнительно</h2>
+        
+        <p style="margin-bottom: 8px;">Шпионов в раунде</p>
+        <div class="players-control" id="spy-manual-control">
+            <button class="icon-btn" id="btn-spy-minus">−</button>
+            <span id="spy-count-display">1</span>
+            <button class="icon-btn" id="btn-spy-plus">+</button>
+        </div>
+
+        <div class="toggle-control">
+            <div class="toggle-label-block">
+                <span class="toggle-title">Случайное количество</span>
+                <span class="toggle-desc">Число шпионов скрыто до конца игры</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="checkbox-random-spies">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="toggle-control">
+            <div class="toggle-label-block">
+                <span class="toggle-title">Режим «Паранойя»</span>
+                <span class="toggle-desc">20% шанс раунда без шпионов</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="checkbox-paranoia">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="toggle-control">
+            <div class="toggle-label-block">
+                <span class="toggle-title">Режим «Лжецы»</span>
+                <span class="toggle-desc">20% шанс, что все станут шпионами</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="checkbox-liars">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button class="btn-primary" id="btn-modal-close" style="margin-top: 1.5rem; padding: 14px;">Применить</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ СВОЕЙ КАТЕГОРИИ -->
+<div class="modal-overlay" id="modal-add-pack">
+    <div class="modal-content">
+        <h2 style="margin-bottom: 1.2rem;">Новая категория</h2>
+        
+        <input type="text" id="input-pack-name" class="modal-input" placeholder="Название категории" maxlength="32">
+        <textarea id="textarea-pack-words" class="modal-textarea" placeholder="Введите слова через запятую или с новой строки (минимум 2 слова)"></textarea>
+
+        <div style="display: flex; gap: 12px; width: 100%;">
+            <button class="btn-secondary" id="btn-modal-pack-cancel" style="padding: 14px; font-size: 1rem;">Отмена</button>
+            <button class="btn-primary" id="btn-modal-pack-save" style="margin-top: 0; padding: 14px; font-size: 1rem;">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === СЕРВИС-ВОРКЕР ===
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const swContent = `
+                const CACHE_NAME = 'spy-game-v1';
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => {
+                    if (e.request.mode === 'navigate' || e.request.url === self.location.href) {
+                        e.respondWith(
+                            fetch(e.request)
+                                .then(res => {
+                                    const copy = res.clone();
+                                    caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
+                                    return res;
+                                })
+                                .catch(() => caches.match(e.request))
+                        );
+                    } else {
+                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+                    }
+                });
+            `;
+            try {
+                const blob = new Blob([swContent], { type: 'text/javascript' });
+                const blobURL = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(blobURL, { scope: './' }).catch(() => {});
+            } catch(e) {}
+        });
+    }
+
+    // === ДАННЫЕ ВСТРОЕННЫХ КАТЕГОРИЙ ===
+    const rawCategoriesData = [
+        {
+            name: "Топ-100 футболистов",
+            data: `1. Лионель Месси; 26. Эусебио; 51. Оливер Кан; 76. Самуэль Это’О
+2. Криштиану Роналду; 27. Гарринча; 52. Лотар Маттеус; 77. Яя Туре
+3. Пеле; 28. Бобби Чарльтон; 53. Герд Мюллер; 78. Майкл Оуэн
+4. Диего Марадона; 29. Джордж Бест; 54. Юрген Клинсманн; 79. Алан Ширер
+5. Йохан Кройф; 30. Марко ван Бастен; 55. Кевин Де Брюйне; 80. Р. ван Нистелрой
+6. Зинедин Zidane; 31. Рууд Гуллит; 56. Мохаммед Салах; 81. Робин ван Перси
+7. Роналдо (Зубастик); 32. Франк Райкард; 57. Садио Мане; 82. Арьен Роббен
+8. Франц Беккенбауэр; 33. Ромарио; 58. Харри Kane; 83. Уэсли Снейдер
+9. Альфредо Ди Стефано; 34. Ривалдо; 59. Эрлинг Холанд; 84. Звонимир Бобан
+10. Мишель Платини; 35. Кака; 60. Луис Суарес; 85. Давор Шукер
+11. Роналдиньо; 36. Луиш Фигу; 61. Эдинсон Кавани; 86. Лукас Подольски
+12. Тьерри Анри; 37. Дэвид Бекхэм; 62. Диего Форлан; 87. Мирослав Клозе
+13. Андрес Иньеста; 38. Рауль Гонсалес; 63. Гарет Бейл; 88. Г. Батистута
+14. Хави Эрнандес; 39. Икер Касильяс; 64. Райан Гиггз; 89. Хавьер Дзанетти
+15. Лука Модрич; 40. Серхио Рамос; 65. Пол Скоулз; 90. Эрнан Креспо
+16. Карим Бензема; 41. Хаби Алонсо; 66. Рой Кин; 91. Серхио Агуэро
+17. Килиан Мбаппе; 42. Жерар Пике; 67. Уэйн Руни; 92. Анхель Ди Мария
+18. Неймар; 43. Карлес Пуйоль; 68. Стивен Джеррард; 93. Артуро Видаль
+19. Роберт Левандовский; 44. Фабио Каннаваро; 69. Фрэнк Лэмпард; 94. Алексис Санчес
+20. Златан Ибрагимович; 45. А. Дель Пьеро; 70. Джон Терри; 95. Хамес Родригес
+21. Паоло Мальдини; 46. Франческо Тотти; 71. Рио Ferdinand; 96. Радамель Фалькао
+22. Роберто Карлос; 47. Андреа Пирло; 72. Патрик Виейра; 97. Кейлор Навас
+23. Джанлуиджи Буффон; 48. Филипп Лам; 73. Деннис Бергкамп; 98. Сон Хын Мин
+24. Лев Яшин; 49. Томас Мюллер; 74. Дидье Дрогба; 99. Хидетоши Наката
+25. Мануэль Нойер; 50. Б. Швайнштайгер; 75. Давид Вилья; 100. Андрей Шевченко`
+        },
+        {
+            name: "Топ-100 компьютерных игр",
+            data: `1. Minecraft; 26. Zelda: Breath of the Wild; 51. Among Us; 76. NFS: Most Wanted
+2. Tetris; 27. CoD: Black Ops; 52. Roblox; 77. Heroes of M&M III
+3. Grand Theft Auto V; 28. CoD: Modern Warfare 2; 53. Fortnite; 78. S.T.A.L.K.E.R.: SoC
+4. Red Dead Redemption 2; 29. GTA: San Andreas; 54. Apex Legends; 79. Metro 2033
+5. Wii Sports; 30. GTA: Vice City; 55. Overwatch; 80. Max Payne
+6. Mario Kart 8 Deluxe; 31. Fallout 3; 56. Valorant; 81. Mafia: The City of LH
+7. PUBG: Battlegrounds; 32. Fallout: New Vegas; 57. Team Fortress 2; 82. C&C: Red Alert 2
+8. Terraria; 33. Mass Effect 2; 58. Left 4 Dead 2; 83. Deus Ex
+9. The Witcher 3: Wild Hunt; 34. BioShock; 59. Dead by Daylight; 84. System Shock 2
+10. Super Mario Bros.; 35. Halo: Combat Evolved; 60. Rocket League; 85. Life is Strange
+11. Counter-Strike 2 / GO; 36. StarCraft; 61. Rust; 86. Detroit: Become Human
+12. Dota 2; 37. Warcraft III; 62. ARK: Survival Evolved; 87. Heavy Rain
+13. League of Legends; 38. Age of Empires II; 63. Subnautica; 88. Disco Elysium
+14. World of Warcraft; 39. The Sims 2; 64. Sea of Thieves; 89. Outer Wilds
+15. TES V: Skyrim; 40. Civilization V; 65. Horizon Zero Dawn; 90. Hades
+16. Elden Ring; 41. Assassin's Creed II; 66. Uncharted 4: A Thief's End; 91. Celeste
+17. Cyberpunk 2077; 42. Borderlands 2; 67. Marvel's Spider-Man; 92. Cuphead
+18. Diablo II; 43. Stardew Valley; 68. Baldur's Gate 3; 93. Garry's Mod
+19. Half-Life 2; 44. Human: Fall Flat; 69. Monster Hunter: World; 94. Payday 2
+20. Doom (1993); 45. Animal Crossing: NH; 70. Street Fighter II; 95. SimCity 4
+21. Pac-Man; 46. Undertale; 71. Mortal Kombat 3; 96. Total War: Shogun 2
+22. Resident Evil 4; 47. Hollow Knight; 72. Tekken 3; 97. Crusader Kings III
+23. Portal 2; 48. Dark Souls; 73. Resident Evil 2; 98. Hearts of Iron IV
+24. God of War (2018); 49. Bloodborne; 74. Final Fantasy VII; 99. Football Manager
+25. The Last of Us; 50. Super Smash Bros. Ult.; 75. Silent Hill 2; 100. Spore`
+        },
+        {
+            name: "Топ-57 футбольных клубов",
+            data: `1. Реал Мадрид; 26. Фенербахче; 51. Шахтер Донецк
+2. Барселона; 27. Бешикташ; 52. Зенит
+3. Манчестер Юнайтед; 28. Рома; 53. Спартак Москва
+4. Ливерпуль; 29. Лацио; 54. ЦСКА Москва
+5. Бавария Мюнхен; 30. Наполи; 55. Локомотив Москва
+6. Ювентус; 31. Фиорентина; 56. Палмейрас
+7. Манчестер Сити; 32. Олимпик Марсель; 57. Сантос
+8. Челси; 33. Лион
+9. ПСЖ; 34. Монако
+10. Арсенал; 35. Валенсия
+11. Милан; 36. Севилья
+12. Интер Милан; 37. Вильярреал
+13. Атлетико Мадрид; 38. Ньюкасл Юнайтед
+14. Боруссия Дортмунд; 39. Вест Хэм Юнайтед
+15. Тоттенхэм Хотспур; 40. Астон Вилла
+16. Аякс; 41. Эвертон
+17. Бенфика; 42. Лестер Сити
+18. Порту; 43. РБ Лейпциг
+19. Фламенго; 44. Байер Леверкузен
+20. Коринтианс; 45. Айнтрахт Франкфурт
+21. Бока Хуниорс; 46. Шальке 04
+22. Ривер Плейт; 47. Спортинг Лиссабон
+23. Селтик; 48. Олимпиакос
+24. Рейнджерс; 49. Панатинаикос
+25. Галатасарай; 50. Динамо Киев`
+        },
+        {
+            name: "Топ-100 глобальных брендов",
+            data: `1. Apple; 26. Meta (Facebook); 76. Cartier
+2. Coca-Cola; 27. [ПРОПУСК]; 77. Hermès
+3. Google; 28. Ferrari; 78. Prada
+4. Microsoft; 29. Porsche; 54. [ПРОПУСК]; 79. Tiffany & Co.
+5. Amazon; 30. Rolex; 55. Nokia; 80. Heineken
+6. McDonald's; 31. Nestle; 56. Canon
+7. Toyota; 32. Honda; 57. Xerox
+8. Mercedes-Benz; 33. IKEA; 58. HP
+9. Disney; 34. LEGO
+10. Nike; 35. Starbucks; 85. H&M
+11. Ford; 36. Netflix; 61. DHL; 86. Zara
+12. IBM; 37. Walmart; 62. [ПРОПУСК]; 87. Gillette
+13. Samsung; 38. [ПРОПУСК]; 63. Red Bull; 88. Colgate
+14. General Electric; 64. YouTube; 89. Nescafé
+15. Louis Vuitton; 40. Johnson & Johnson; 65. TikTok; 90. eBay
+16. [ПРОПУСК]; 41. L'Oreal; 66. Instagram; 91. PlayStation
+17. Sony; 42. Mastercard; 67. Alibaba; 92. Uber
+18. BMW; 43. [ПРОПУСК]; 68. [ПРОПУСК]; 93. [ПРОПУСК]
+19. Visa; 44. [ПРОПУСК]; 69. Xiaomi; 94. Tesla
+20. Intel; 70. Hyundai; 95. SpaceX
+21. Volkswagen; 71. Audi; 96. Nvidia
+22. Chanel; 72. Volvo; 97. [ПРОПУСК]
+23. Adidas; 48. Philips; 73. [ПРОПУСК]; 98. K
+24. Gucci; 49. Panasonic; 74. Bayer; 99. Rolls-Royce
+25. Pepsi; 50. Nintendo`
+        },
+        {
+            name: "Топ-100 кассовых фильмов",
+            data: `1. Аватар; 51. Сияние; 76. Дюна (Д. Вильнёва)
+2. Мстители: Финал
+3. Титаник
+4. Звёздные войны: Эп. IV; 79. Старикам тут не место
+5. Крёстный отец; 30. Король Лев (1994)
+6. Матрица; 31. Челюсти
+7. [ПРОПУСК]; 32. Чужой
+58. Храброе сердце
+34. Бегущий по лезвию
+10. Бойцовский клуб; 35. Звёздные войны: Эп. V; 60. Семь
+11. Форрест Гамп; 36. Мстители: Война беск.
+12. [ПРОПУСК]; 37. Ч-Паук: Нет пути домой
+13. Парк Юрского периода; 38. Мир Юрского периода
+14. Назад в будущее; 64. Шоу Trumanа
+15. Терминатор 2; 40. ...Барби; 90. Брат
+41. Гарри Поттер и ДС: Ч.2; 66. Волк с Уолл-стрит
+42. Холодное сердце
+18. Зелёная миля; 43. Суперсемейка 2
+19. Гладиатор; 44. Миньоны; 69. Престиж
+20. Интерстеллар; 45. Железный человек 3; 95. Пираты Карибского моря
+21. Начало; 46. Трансформеры 3
+47. Скала
+48. Крепкий орешек; 73. Джокер (2019); 98. Звёздные войны: Эп. VI
+49. Индиана Джонс: В поисках; 99. 007 Агент
+50. Чужие; 75. Оппенгеймер; 100. Кинг Конг (1933)`
+        }
+    ];
+
+    function parseCategoryData(rawData) {
+        if (!rawData) return [];
+        return rawData
+            .split(/[\n,;]+/)
+            .map(item => item.trim())
+            .map(item => item.replace(/^\d+\.\s*/, ''))
+            .filter(item => item.length > 0 && item !== '[ПРОПУСК]');
+    }
+
+    // === ИГРОВОЕ СОСТОЯНИЕ ===
+    let playersCount = 4;
+    let spiesCount = 1;
+    let gameMode = 'classic'; 
+    let actualGameModeThisRound = 'classic'; 
+    
+    let customCategories = [];
+    // Полностью безопасное чтение localStorage
+    try {
+        const stored = localStorage.getItem('spy_custom_categories');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+                customCategories = parsed;
+            }
+        }
+    } catch (e) {
+        console.warn("LocalStorage недоступен, работаем во временной памяти браузера.");
+    }
+
+    let selectedCategoryIndex = 0;
+    let selectedCategoryType = 'built-in'; 
+    
+    let paranoiaActive = false; 
+    let liarsActive = false;
+    let isLiarsTriggeredThisRound = false;
+    let actualSpiesThisRound = 0; 
+    
+    let currentWord = "";
+    let spyWord = "";
+    let roles = [];
+    let currentPlayerIndex = 0;
+    
+    let timerInterval = null;
+    let timeLeft = 300;
+    let isTimerPaused = false;
+
+    // Кэш DOM элементов
+    const screens = {
+        setup: document.getElementById('screen-setup'),
+        waiting: document.getElementById('screen-waiting'),
+        role: document.getElementById('screen-role'),
+        final: document.getElementById('screen-final')
+    };
+
+    // === ИНИЦИАЛИЗАЦИЯ И ПРИВЯЗКА КЛИКОВ (ЗАЩИЩЕННАЯ) ===
+    function setClick(id, handler) {
+        const el = document.getElementById(id);
+        if (el) el.onclick = handler;
+    }
+
+    function init() {
+        renderCategories();
+
+        // Безопасное назначение обработчиков событий
+        setClick('btn-minus', () => updatePlayers(-1));
+        setClick('btn-plus', () => updatePlayers(1));
+        setClick('btn-settings', () => {
+            const modal = document.getElementById('modal-settings');
+            if (modal) modal.classList.add('active');
+        });
+        setClick('btn-modal-close', () => {
+            const modal = document.getElementById('modal-settings');
+            if (modal) modal.classList.remove('active');
+        });
+        setClick('btn-spy-minus', () => updateSpies(-1));
+        setClick('btn-spy-plus', () => updateSpies(1));
+
+        const checkboxRandomSpies = document.getElementById('checkbox-random-spies');
+        if (checkboxRandomSpies) {
+            checkboxRandomSpies.onchange = () => {
+                const spyControl = document.getElementById('spy-manual-control');
+                if (spyControl) {
+                    if (checkboxRandomSpies.checked) {
+                        spyControl.classList.add('disabled-control');
+                    } else {
+                        spyControl.classList.remove('disabled-control');
+                    }
+                }
+            };
+        }
+
+        setClick('btn-open-add-pack', () => {
+            const nameInp = document.getElementById('input-pack-name');
+            const wordsTxt = document.getElementById('textarea-pack-words');
+            const modal = document.getElementById('modal-add-pack');
+            if (nameInp) nameInp.value = '';
+            if (wordsTxt) wordsTxt.value = '';
+            if (modal) modal.classList.add('active');
+        });
+        
+        setClick('btn-modal-pack-cancel', () => {
+            const modal = document.getElementById('modal-add-pack');
+            if (modal) modal.classList.remove('active');
+        });
+        setClick('btn-modal-pack-save', saveCustomCategory);
+
+        setClick('mode-classic', (e) => selectMode('classic', e.target));
+        setClick('mode-blind', (e) => selectMode('blind', e.target));
+        setClick('mode-random', (e) => selectMode('random', e.target));
+        
+        setClick('btn-start', startGame);
+        setClick('btn-show-role', showRole);
+        setClick('btn-hide-role', hideRoleAndNext);
+        setClick('btn-pause-timer', toggleTimer);
+        setClick('btn-reset-timer', addMinute);
+        setClick('btn-restart', resetGame);
+    }
+
+    // Отрисовка списков
+    function renderCategories() {
+        const container = document.getElementById('categories-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        // Встроенные
+        rawCategoriesData.forEach((cat, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'category-item-wrapper';
+            
+            const btn = document.createElement('button');
+            btn.className = 'category-btn' + (index === selectedCategoryIndex && selectedCategoryType === 'built-in' ? ' selected' : '');
+            btn.textContent = cat.name;
+            btn.onclick = () => selectCategory(index, 'built-in');
+            
+            wrapper.appendChild(btn);
+            container.appendChild(wrapper);
+        });
+
+        // Кастомные
+        customCategories.forEach((cat, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'category-item-wrapper';
+            
+            const btn = document.createElement('button');
+            btn.className = 'category-btn' + (index === selectedCategoryIndex && selectedCategoryType === 'custom' ? ' selected' : '');
+            btn.textContent = cat.name;
+            btn.onclick = () => selectCategory(index, 'custom');
+            
+            const delBtn = document.createElement('button');
+            delBtn.className = 'category-delete-btn';
+            delBtn.innerHTML = '&times;';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteCustomCategory(index);
+            };
+            
+            wrapper.appendChild(btn);
+            wrapper.appendChild(delBtn);
+            container.appendChild(wrapper);
+        });
+    }
+
+    function selectCategory(index, type) {
+        selectedCategoryIndex = index;
+        selectedCategoryType = type;
+        renderCategories();
+    }
+
+    function saveCustomCategory() {
+        const nameInp = document.getElementById('input-pack-name');
+        const wordsTxt = document.getElementById('textarea-pack-words');
+        if (!nameInp || !wordsTxt) return;
+
+        const nameInput = nameInp.value.trim();
+        const wordsInput = wordsTxt.value.trim();
+
+        if (!nameInput) {
+            alert('Введите название категории');
+            return;
+        }
+
+        const filteredWords = parseCategoryData(wordsInput);
+        if (filteredWords.length < 2) {
+            alert('Категория должна содержать хотя бы 2 уникальных слова');
+            return;
+        }
+
+        customCategories.push({
+            name: nameInput,
+            data: filteredWords.join('; ')
+        });
+
+        try {
+            localStorage.setItem('spy_custom_categories', JSON.stringify(customCategories));
+        } catch(e){}
+
+        const modal = document.getElementById('modal-add-pack');
+        if (modal) modal.classList.remove('active');
+        
+        selectedCategoryIndex = customCategories.length - 1;
+        selectedCategoryType = 'custom';
+        renderCategories();
+    }
+
+    function deleteCustomCategory(index) {
+        if (confirm('Удалить эту категорию?')) {
+            customCategories.splice(index, 1);
+            try {
+                localStorage.setItem('spy_custom_categories', JSON.stringify(customCategories));
+            } catch(e){}
+            
+            selectedCategoryIndex = 0;
+            selectedCategoryType = 'built-in';
+            renderCategories();
+        }
+    }
+
+    function updatePlayers(delta) {
+        playersCount += delta;
+        if (playersCount < 3) playersCount = 3;
+        if (playersCount > 12) playersCount = 12;
+        const disp = document.getElementById('players-count-display');
+        if (disp) disp.textContent = playersCount;
+        validateSpiesLimits();
+    }
+
+    function updateSpies(delta) {
+        spiesCount += delta;
+        validateSpiesLimits();
+    }
+
+    function validateSpiesLimits() {
+        const maxSpiesAllowed = Math.min(3, playersCount - 2); 
+        if (spiesCount > maxSpiesAllowed) spiesCount = maxSpiesAllowed;
+        if (spiesCount < 1) spiesCount = 1;
+        const disp = document.getElementById('spy-count-display');
+        if (disp) disp.textContent = spiesCount;
+    }
+
+    function selectMode(mode, targetBtn) {
+        gameMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('selected'));
+        if (targetBtn) targetBtn.classList.add('selected');
+    }
+
+    function switchScreen(screenName) {
+        Object.values(screens).forEach(s => { if(s) s.classList.remove('active'); });
+        if (screens[screenName]) screens[screenName].classList.add('active');
+    }
+
+    function startGame() {
+        const maxSpiesAllowed = Math.min(3, playersCount - 2);
+        const checkboxRandomSpies = document.getElementById('checkbox-random-spies');
+        const isRandomSpiesMode = checkboxRandomSpies ? checkboxRandomSpies.checked : false;
+
+        if (!isRandomSpiesMode && spiesCount > maxSpiesAllowed) {
+            alert('Слишком много шпионов для выбранного количества игроков.');
+            return;
+        }
+
+        let sourceData = "";
+        if (selectedCategoryType === 'built-in') {
+            sourceData = rawCategoriesData[selectedCategoryIndex] ? rawCategoriesData[selectedCategoryIndex].data : "";
+        } else {
+            sourceData = customCategories[selectedCategoryIndex] ? customCategories[selectedCategoryIndex].data : "";
+        }
+
+        const wordsArray = parseCategoryData(sourceData);
+        if (wordsArray.length < 2) {
+            alert('Ошибка: В категории недостаточно слов для старта.');
+            return;
+        }
+        
+        const idxA = Math.floor(Math.random() * wordsArray.length);
+        currentWord = wordsArray[idxA];
+        
+        let idxB;
+        do {
+            idxB = Math.floor(Math.random() * wordsArray.length);
+        } while (idxB === idxA && wordsArray.length > 1);
+        spyWord = wordsArray[idxB];
+
+        if (gameMode === 'random') {
+            actualGameModeThisRound = Math.random() < 0.5 ? 'classic' : 'blind';
+        } else {
+            actualGameModeThisRound = gameMode;
+        }
+
+        const cbLiars = document.getElementById('checkbox-liars');
+        const cbParanoia = document.getElementById('checkbox-paranoia');
+        liarsActive = cbLiars ? cbLiars.checked : false;
+        paranoiaActive = cbParanoia ? cbParanoia.checked : false;
+        isLiarsTriggeredThisRound = false;
+
+        if (liarsActive && Math.random() < 0.20) {
+            isLiarsTriggeredThisRound = true;
+            actualSpiesThisRound = playersCount;
+            roles = Array(playersCount).fill('spy');
+        } else if (paranoiaActive && Math.random() < 0.20) {
+            actualSpiesThisRound = 0;
+            roles = Array(playersCount).fill('peaceful');
+        } else {
+            if (isRandomSpiesMode) {
+                actualSpiesThisRound = Math.floor(Math.random() * maxSpiesAllowed) + 1;
+            } else {
+                actualSpiesThisRound = spiesCount;
+            }
+
+            roles = Array(playersCount).fill('peaceful');
+            let allocatedSpies = 0;
+            while (allocatedSpies < actualSpiesThisRound) {
+                let randIdx = Math.floor(Math.random() * playersCount);
+                if (roles[randIdx] === 'peaceful') {
+                    roles[randIdx] = 'spy';
+                    allocatedSpies++;
+                }
+            }
+        }
+        
+        currentPlayerIndex = 0;
+        prepareWaitingScreen();
+    }
+
+    function prepareWaitingScreen() {
+        const wp = document.getElementById('waiting-player-num');
+        if (wp) wp.textContent = `Игрок ${currentPlayerIndex + 1}`;
+        switchScreen('waiting');
+    }
+
+    function showRole() {
+        const isSpy = roles[currentPlayerIndex] === 'spy';
+        const subtitle = document.getElementById('role-subtitle');
+        const word = document.getElementById('role-word');
+        const hint = document.getElementById('role-hint');
+
+        if (!subtitle || !word || !hint) return;
+        
+        if (isSpy) {
+            if (actualGameModeThisRound === 'classic') {
+                subtitle.textContent = "Ваша роль";
+                word.textContent = "ВЫ ШПИОН";
+                word.className = "role-value spy";
+                hint.textContent = "Попытайтесь не выдать себя и узнать, о чём говорят другие.";
+            } else {
+                subtitle.textContent = "Секретное слово";
+                word.textContent = spyWord;
+                word.className = "role-value";
+                hint.textContent = "Задавайте вопросы так, чтобы другие не догадались о вашем слове.";
+            }
+        } else {
+            subtitle.textContent = "Секретное слово";
+            word.textContent = currentWord;
+            word.className = "role-value";
+            hint.textContent = "Задавайте вопросы так, чтобы шпион не догадался о чём речь.";
+        }
+        
+        switchScreen('role');
+    }
+
+    function hideRoleAndNext() {
+        currentPlayerIndex++;
+        if (currentPlayerIndex < playersCount) {
+            prepareWaitingScreen();
+        } else {
+            startDiscussion();
+        }
+    }
+
+    function startDiscussion() {
+        switchScreen('final');
+        
+        const cbRandomSpies = document.getElementById('checkbox-random-spies');
+        const isRandomSpiesMode = cbRandomSpies ? cbRandomSpies.checked : false;
+        
+        const fSpiesStatus = document.getElementById('final-spies-status');
+        const fModeStatus = document.getElementById('final-mode-status');
+        const fHint = document.getElementById('final-hint');
+
+        if (fSpiesStatus) {
+            if (isRandomSpiesMode) {
+                fSpiesStatus.textContent = "Количество шпионов: Засекречено ❓";
+                fSpiesStatus.style.display = "block";
+            } else {
+                fSpiesStatus.style.display = "none";
+            }
+        }
+
+        if (fModeStatus) {
+            if (gameMode === 'random') {
+                fModeStatus.textContent = "Режим игры: Засекречен ❓";
+                fModeStatus.style.display = "block";
+            } else {
+                fModeStatus.style.display = "none";
+            }
+        }
+
+        if (fHint) {
+            if (isLiarsTriggeredThisRound) {
+                fHint.textContent = "Шпион(ы) среди вас... или все вокруг лгут?";
+            } else if (paranoiaActive && actualSpiesThisRound === 0) {
+                fHint.textContent = "Шпион(ы) могут быть среди вас... или это паранойя?";
+            } else {
+                fHint.textContent = "Начните обсуждение и задавайте друг другу вопросы.";
+            }
+        }
+
+        timeLeft = 300;
+        isTimerPaused = false;
+        const pauseBtn = document.getElementById('btn-pause-timer');
+        if (pauseBtn) pauseBtn.textContent = "Пауза";
+        updateTimerDisplay();
+        
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(tickTimer, 1000);
+    }
+
+    function tickTimer() {
+        if (isTimerPaused || timeLeft <= 0) return;
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft === 0) {
+            clearInterval(timerInterval);
+            const display = document.getElementById('timer-display');
+            if (display) display.style.color = "var(--danger-color)";
+        }
+    }
+
+    function updateTimerDisplay() {
+        const display = document.getElementById('timer-display');
+        if (!display) return;
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        display.textContent = `${m}:${s}`;
+    }
+
+    function toggleTimer() {
+        if (timeLeft <= 0) return;
+        isTimerPaused = !isTimerPaused;
+        const pauseBtn = document.getElementById('btn-pause-timer');
+        if (pauseBtn) pauseBtn.textContent = isTimerPaused ? "Продолжить" : "Пауза";
+    }
+
+    function addMinute() {
+        timeLeft += 60;
+        const display = document.getElementById('timer-display');
+        if (display) display.style.color = "var(--text-main)";
+        updateTimerDisplay();
+    }
+
+    function resetGame() {
+        if (timerInterval) clearInterval(timerInterval);
+        const display = document.getElementById('timer-display');
+        if (display) display.style.color = "var(--text-main)";
+        switchScreen('setup');
+    }
+
+    // Безопасный запуск после загрузки структуры документа
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+</script>
+
+</body>
+</html>
